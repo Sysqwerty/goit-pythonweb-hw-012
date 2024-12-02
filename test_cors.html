@@ -1,0 +1,32 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>CORS Test</title>
+</head>
+
+<body>
+  <p>Тест CORS</p>
+  <script>
+    fetch("http://127.0.0.1:8000/api/healthchecker", {
+      method: "GET",
+      headers: {
+        "Content-Type": "application/json",
+      },
+    })
+      .then(response => {
+        if (response.ok) {
+          console.log("CORS працює:", response);
+        } else {
+          console.error("CORS помилка:", response.status, response.statusText);
+        }
+      })
+      .catch(error => {
+        console.error("Помилка запиту:", error);
+      });
+  </script>
+</body>
+
+</html>
