@@ -1,9 +1,9 @@
 from fastapi import APIRouter, Depends, HTTPException, status, BackgroundTasks, Request
 from sqlalchemy.ext.asyncio import AsyncSession
 from fastapi.security import OAuth2PasswordRequestForm
-from src.schemas import UserCreate, Token, User, RequestEmail
-from src.services.email import send_email
-from src.services.auth import create_access_token, Hash, get_email_from_token
+from src.schemas import UserCreate, Token, User, RequestEmail, ResetPassword
+from src.services.email import send_confirm_email, send_reset_password_email
+from src.services.auth import create_access_token, Hash, get_email_from_token, get_password_from_token
 from src.services.users import UserService
 from src.database.db import get_db
 
@@ -32,7 +32,7 @@ async def register_user(user_data: UserCreate, background_tasks: BackgroundTasks
     user_data.password = Hash().get_password_hash(user_data.password)
     new_user = await user_service.create_user(user_data)
     background_tasks.add_task(
-        send_email, new_user.email, new_user.username, request.base_url
+        send_confirm_email, new_user.email, new_user.username, request.base_url
     )
 
     return new_user
@@ -91,6 +91,72 @@ async def request_email(
         return {"message": "Ваша електронна пошта вже підтверджена"}
     if user:
         background_tasks.add_task(
-            send_email, user.email, user.username, request.base_url
+            send_confirm_email, user.email, user.username, request.base_url
         )
     return {"message": "Перевірте свою електронну пошту для підтвердження"}
+
+
+@router.post("/reset_password")
+async def reset_password_request(
+        body: ResetPassword,
+        background_tasks: BackgroundTasks,
+        request: Request,
+        db: AsyncSession = Depends(get_db)):
+    user_service = UserService(db)
+    user = await user_service.get_user_by_email(body.email)
+
+    if not user:
+        # Не повідомляємо, чи існує користувач
+        return {"message": "Перевірте свою електронну пошту для скидання пароля"}
+
+    if not user.confirmed:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Електронна адреса не підтверджена"
+        )
+
+    hashed_password = Hash().get_password_hash(body.password)
+
+    reset_token = await create_access_token(
+        data={"sub": user.email, "password": hashed_password}
+    )
+
+    # Відправка email
+    background_tasks.add_task(
+        send_reset_password_email,
+        to_email=body.email,
+        username=user.username,
+        host=str(request.base_url),
+        reset_token=reset_token
+    )
+
+    return {"message": "Перевірте свою електронну пошту для скидання пароля"}
+
+
+@router.get("/confirm_reset_password/{token}")
+async def confirm_reset_password(
+        token: str,
+        db: AsyncSession = Depends(get_db)
+):
+    email = await get_email_from_token(token)
+    hashed_password = await get_password_from_token(token)
+
+    if not email or not hashed_password:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Недійсний або прострочений токен"
+        )
+
+    user_service = UserService(db)
+    user = await user_service.get_user_by_email(email)
+
+    if not user:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Користувача з такою електронною поштою не знайдено"
+        )
+
+    # Оновлення пароля
+    await user_service.reset_password(user.id, hashed_password)
+
+    return {"message": "Пароль успішно оновлено"}

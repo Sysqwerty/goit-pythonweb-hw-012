@@ -22,12 +22,12 @@ conf = ConnectionConfig(
 )
 
 
-async def send_email(email: EmailStr, username: str, host: str):
+async def send_confirm_email(to_email: EmailStr, username: str, host: str):
     try:
-        token_verification = create_email_token({"sub": email})
+        token_verification = create_email_token({"sub": to_email})
         message = MessageSchema(
             subject="Confirm your email",
-            recipients=[email],
+            recipients=[to_email],
             template_body={
                 "host": host,
                 "username": username,
@@ -38,5 +38,33 @@ async def send_email(email: EmailStr, username: str, host: str):
 
         fm = FastMail(conf)
         await fm.send_message(message, template_name="verify_email.html")
+    except ConnectionErrors as err:
+        print(err)
+
+
+async def send_reset_password_email(to_email: EmailStr, username: str, host: str, reset_token: str):
+    """
+    Відправка email для підтвердження скидання пароля.
+
+    :param to_email: Email користувача.
+    :param username: Ім'я користувача.
+    :param host: Хост сервера (для формування посилання).
+    :param reset_token: Токен для підтвердження скидання пароля.
+    """
+    try:
+        reset_link = f"{host}api/auth/confirm_reset_password/{reset_token}"
+
+        message = MessageSchema(
+            subject="Important: Update your account information",
+            recipients=[to_email],
+            template_body={
+                "reset_link": reset_link,
+                "username": username
+            },
+            subtype=MessageType.html,
+        )
+
+        fm = FastMail(conf)
+        await fm.send_message(message, template_name="reset_password.html")
     except ConnectionErrors as err:
         print(err)
