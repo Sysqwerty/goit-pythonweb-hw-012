@@ -1,7 +1,7 @@
 from sqlalchemy.ext.asyncio import AsyncSession
 from libgravatar import Gravatar
 
-from src.repository.users import UserRepository
+from src.repository.users_repository import UserRepository
 from src.schemas import UserCreate
 
 

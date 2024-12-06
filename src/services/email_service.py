@@ -4,7 +4,7 @@ from fastapi_mail import FastMail, MessageSchema, ConnectionConfig, MessageType
 from fastapi_mail.errors import ConnectionErrors
 from pydantic import EmailStr
 
-from src.services.auth import create_email_token
+from src.services.auth_service import create_email_token
 from src.conf.config import settings
 
 conf = ConnectionConfig(

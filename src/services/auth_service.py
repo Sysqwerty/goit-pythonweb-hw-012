@@ -1,5 +1,6 @@
 from datetime import datetime, timedelta, timezone
 from typing import Optional
+from aiocache import cached
 
 from fastapi import Depends, HTTPException, status
 from passlib.context import CryptContext
@@ -9,7 +10,8 @@ from jose import JWTError, jwt
 
 from src.database.db import get_db
 from src.conf.config import settings
-from src.services.users import UserService
+from src.database.models import User, UserRole
+from src.services.users_service import UserService
 
 
 class Hash:
@@ -39,6 +41,19 @@ async def create_access_token(data: dict, expires_delta: Optional[int] = None):
     return encoded_jwt
 
 
+def cache_key_builder(func, args, kwargs):
+    return f"username: {args[0]}"  # username — перший аргумент функції
+
+
+@cached(ttl=300, key_builder=cache_key_builder)  # 5 хвилин кешування, кастомний кей білдер
+async def get_user_from_db(username: str, db: AsyncSession) -> User:
+    print('NOT CACHED USER')  # для перевірки кешування
+    user_service = UserService(db)
+    user = await user_service.get_user_by_username(username)
+
+    return user
+
+
 async def get_current_user(
         token: str = Depends(oauth2_scheme), db: AsyncSession = Depends(get_db)
 ):
@@ -58,11 +73,18 @@ async def get_current_user(
             raise credentials_exception
     except JWTError as e:
         raise credentials_exception
-    user_service = UserService(db)
-    user = await user_service.get_user_by_username(username)
+
+    user = await get_user_from_db(username, db)
+
     if user is None:
         raise credentials_exception
     return user
+
+
+def get_current_admin_user(current_user: User = Depends(get_current_user)):
+    if current_user.role != UserRole.ADMIN:
+        raise HTTPException(status_code=403, detail="Недостатньо прав доступу")
+    return current_user
 
 
 def create_email_token(data: dict):
