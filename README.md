@@ -52,3 +52,12 @@ fastapi dev main.py
 ```
 
 Open in browser SWAGGER doc: [link](http://127.0.0.1:8000/docs#/)
+
+### TESTS
+Run all the tests and re-generate the test report coverage
+```bash
+pytest --cov=src tests/ --cov-report=html
+```
+
+Check tests coverage HTML
+[link](htmlcov/index.html)

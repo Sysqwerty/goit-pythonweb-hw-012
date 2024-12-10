@@ -1,33 +1,59 @@
 from fastapi import APIRouter, Depends, HTTPException, status, BackgroundTasks, Request
 from sqlalchemy.ext.asyncio import AsyncSession
 from fastapi.security import OAuth2PasswordRequestForm
+
+from src.conf import messages
 from src.schemas import UserCreate, Token, User, RequestEmail, ResetPassword
 from src.services.email_service import send_confirm_email, send_reset_password_email
-from src.services.auth_service import create_access_token, Hash, get_email_from_token, get_password_from_token
+from src.services.auth_service import (
+    create_access_token,
+    Hash,
+    get_email_from_token,
+    get_password_from_token,
+)
 from src.services.users_service import UserService
 from src.database.db import get_db
 
 router = APIRouter(prefix="/auth", tags=["auth"])
 
 
-# Реєстрація користувача
 @router.post("/register", response_model=User, status_code=status.HTTP_201_CREATED)
-async def register_user(user_data: UserCreate, background_tasks: BackgroundTasks,
-                        request: Request, db: AsyncSession = Depends(get_db)):
+async def register_user(
+    user_data: UserCreate,
+    background_tasks: BackgroundTasks,
+    request: Request,
+    db: AsyncSession = Depends(get_db),
+):
+    """
+    Function for registration new users
+
+    Args:
+        user_data (UserCreate): User data
+        background_tasks (BackgroundTasks): Background tasks
+        request (Request): Request
+        db (AsyncSession): Database session instance
+
+    Returns:
+        User
+
+    Raises:
+        HTTPException: User already exists
+        HTTPException: Username or email already exists
+    """
     user_service = UserService(db)
 
     email_user = await user_service.get_user_by_email(user_data.email)
     if email_user:
         raise HTTPException(
             status_code=status.HTTP_409_CONFLICT,
-            detail="Користувач з таким email вже існує",
+            detail=messages.USER_EMAIL_ALREADY_EXISTS,
         )
 
     username_user = await user_service.get_user_by_username(user_data.username)
     if username_user:
         raise HTTPException(
             status_code=status.HTTP_409_CONFLICT,
-            detail="Користувач з таким іменем вже існує",
+            detail=messages.USER_NAME_ALREADY_EXISTS,
         )
     user_data.password = Hash().get_password_hash(user_data.password)
     new_user = await user_service.create_user(user_data)
@@ -41,21 +67,35 @@ async def register_user(user_data: UserCreate, background_tasks: BackgroundTasks
 # Логін користувача
 @router.post("/login", response_model=Token)
 async def login_user(
-        form_data: OAuth2PasswordRequestForm = Depends(), db: AsyncSession = Depends(get_db)
+    form_data: OAuth2PasswordRequestForm = Depends(), db: AsyncSession = Depends(get_db)
 ):
+    """
+    Function for login users
+
+    Args:
+        form_data (OAuth2PasswordRequestForm): Form data
+        db (AsyncSession): Database session instance
+
+    Returns:
+        dict: Access token
+
+    Raises:
+        HTTPException: Invalid credentials
+        HTTPException: Email not confirmed
+    """
     user_service = UserService(db)
     user = await user_service.get_user_by_username(form_data.username)
     if not user or not Hash().verify_password(form_data.password, user.hashed_password):
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Неправильний логін або пароль",
+            detail=messages.INVALID_CREDENTIALS,
             headers={"WWW-Authenticate": "Bearer"},
         )
 
     if not user.confirmed:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Електронна адреса не підтверджена",
+            detail=messages.USER_NOT_CONFIRMED,
         )
 
     access_token = await create_access_token(data={"sub": user.username})
@@ -64,6 +104,19 @@ async def login_user(
 
 @router.get("/confirmed_email/{token}")
 async def confirmed_email(token: str, db: AsyncSession = Depends(get_db)):
+    """
+    Function for user activation
+
+    Args:
+        token (str): Token
+        db (AsyncSession): Database session instance
+
+    Returns:
+        dict: Message about successful activation
+
+    Raises:
+        HTTPException: Verification error
+    """
     email = await get_email_from_token(token)
     user_service = UserService(db)
     user = await user_service.get_user_by_email(email)
@@ -72,47 +125,75 @@ async def confirmed_email(token: str, db: AsyncSession = Depends(get_db)):
             status_code=status.HTTP_400_BAD_REQUEST, detail="Verification error"
         )
     if user.confirmed:
-        return {"message": "Ваша електронна пошта вже підтверджена"}
+        return {"message": messages.EMAIL_ALREADY_CONFIRMED}
     await user_service.confirmed_email(email)
-    return {"message": "Електронну пошту підтверджено"}
+    return {"message": messages.EMAIL_CONFIRMED}
 
 
 @router.post("/request_email")
 async def request_email(
-        body: RequestEmail,
-        background_tasks: BackgroundTasks,
-        request: Request,
-        db: AsyncSession = Depends(get_db),
+    body: RequestEmail,
+    background_tasks: BackgroundTasks,
+    request: Request,
+    db: AsyncSession = Depends(get_db),
 ):
+    """
+    Function for requesting email confirmation
+
+    Args:
+        body (RequestEmail): Body
+        background_tasks (BackgroundTasks): Background tasks
+        request (Request): Request
+        db (AsyncSession): Database session instance
+
+    Returns:
+        dict: Message about successful request
+    """
     user_service = UserService(db)
     user = await user_service.get_user_by_email(body.email)
 
     if user and user.confirmed:
-        return {"message": "Ваша електронна пошта вже підтверджена"}
+        return {"message": messages.EMAIL_ALREADY_CONFIRMED}
     if user:
         background_tasks.add_task(
             send_confirm_email, user.email, user.username, request.base_url
         )
-    return {"message": "Перевірте свою електронну пошту для підтвердження"}
+    return {"message": messages.CHECK_YOUR_EMAIL}
 
 
 @router.post("/reset_password")
 async def reset_password_request(
-        body: ResetPassword,
-        background_tasks: BackgroundTasks,
-        request: Request,
-        db: AsyncSession = Depends(get_db)):
+    body: ResetPassword,
+    background_tasks: BackgroundTasks,
+    request: Request,
+    db: AsyncSession = Depends(get_db),
+):
+    """
+    Function for requesting password reset
+
+    Args:
+        body (ResetPassword): Body
+        background_tasks (BackgroundTasks): Background tasks
+        request (Request): Request
+        db (AsyncSession): Database session instance
+
+    Returns:
+        dict: Message about successful request
+
+    Raises:
+        HTTPException: Email not confirmed
+    """
     user_service = UserService(db)
     user = await user_service.get_user_by_email(body.email)
 
     if not user:
-        # Не повідомляємо, чи існує користувач
-        return {"message": "Перевірте свою електронну пошту для скидання пароля"}
+        # DO not notify that user exists
+        return {"message": messages.CHECK_YOUR_EMAIL}
 
     if not user.confirmed:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
-            detail="Електронна адреса не підтверджена"
+            detail=messages.EMAIL_NOT_CONFIRMED,
         )
 
     hashed_password = Hash().get_password_hash(body.password)
@@ -121,30 +202,41 @@ async def reset_password_request(
         data={"sub": user.email, "password": hashed_password}
     )
 
-    # Відправка email
+    # Send email
     background_tasks.add_task(
         send_reset_password_email,
         to_email=body.email,
         username=user.username,
         host=str(request.base_url),
-        reset_token=reset_token
+        reset_token=reset_token,
     )
 
-    return {"message": "Перевірте свою електронну пошту для скидання пароля"}
+    return {"message": messages.CHECK_YOUR_EMAIL}
 
 
 @router.get("/confirm_reset_password/{token}")
-async def confirm_reset_password(
-        token: str,
-        db: AsyncSession = Depends(get_db)
-):
+async def confirm_reset_password(token: str, db: AsyncSession = Depends(get_db)):
+    """
+    Function for password reset
+
+    Args:
+        token (str): Token
+        db (AsyncSession): Database session instance
+
+    Returns:
+        dict: Message about successful reset password
+
+    Raises:
+        HTTPException: Invalid or expired token
+        HTTPException: User with such email not found
+    """
     email = await get_email_from_token(token)
     hashed_password = await get_password_from_token(token)
 
     if not email or not hashed_password:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
-            detail="Недійсний або прострочений токен"
+            detail=messages.INVALID_OR_EXPIRED_TOKEN,
         )
 
     user_service = UserService(db)
@@ -153,10 +245,10 @@ async def confirm_reset_password(
     if not user:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
-            detail="Користувача з такою електронною поштою не знайдено"
+            detail=messages.USER_WITH_SUCH_EMAIL_NOT_FOUND,
         )
 
-    # Оновлення пароля
+    # Update password
     await user_service.reset_password(user.id, hashed_password)
 
-    return {"message": "Пароль успішно оновлено"}
+    return {"message": messages.PASSWORD_CHANGED}

@@ -22,7 +22,21 @@ conf = ConnectionConfig(
 )
 
 
-async def send_confirm_email(to_email: EmailStr, username: str, host: str):
+async def send_confirm_email(to_email: EmailStr, username: str, host: str) -> None:
+    """
+    Send a confirmation email to the user.
+
+    Args:
+        to_email (EmailStr): Email of the user.
+        username (str): Username of the user.
+        host (str): Host of the server.
+
+    Returns:
+        None
+
+    Raises:
+        ConnectionErrors: If there is an error sending the email.
+    """
     try:
         token_verification = create_email_token({"sub": to_email})
         message = MessageSchema(
@@ -42,14 +56,23 @@ async def send_confirm_email(to_email: EmailStr, username: str, host: str):
         print(err)
 
 
-async def send_reset_password_email(to_email: EmailStr, username: str, host: str, reset_token: str):
+async def send_reset_password_email(
+    to_email: EmailStr, username: str, host: str, reset_token: str
+) -> None:
     """
-    Відправка email для підтвердження скидання пароля.
+    Send a reset password email to the user.
 
-    :param to_email: Email користувача.
-    :param username: Ім'я користувача.
-    :param host: Хост сервера (для формування посилання).
-    :param reset_token: Токен для підтвердження скидання пароля.
+    Args:
+        to_email (EmailStr): Email of the user.
+        username (str): Username of the user.
+        host (str): Host of the server.
+        reset_token (str): Reset token of the user.
+
+    Returns:
+        None
+
+    Raises:
+        ConnectionErrors: If there is an error sending the email.
     """
     try:
         reset_link = f"{host}api/auth/confirm_reset_password/{reset_token}"
@@ -57,10 +80,7 @@ async def send_reset_password_email(to_email: EmailStr, username: str, host: str
         message = MessageSchema(
             subject="Important: Update your account information",
             recipients=[to_email],
-            template_body={
-                "reset_link": reset_link,
-                "username": username
-            },
+            template_body={"reset_link": reset_link, "username": username},
             subtype=MessageType.html,
         )
 

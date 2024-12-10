@@ -9,6 +9,19 @@ router = APIRouter(tags=["utils"])
 
 @router.get("/healthchecker")
 async def healthchecker(db: AsyncSession = Depends(get_db)):
+    """
+    Healthchecker for FastAPI bd connection success
+
+    Args:
+        db (AsyncSession, optional): Database session instance. Defaults to Depends(get_db).
+
+    Returns:
+        dict: {"message": "Welcome to FastAPI!"}
+
+    Raises:
+        HTTPException: Database is not configured correctly
+        HTTPException: Error connecting to the database
+    """
     try:
         # make async call to db
         result = await db.execute(text("SELECT 1"))

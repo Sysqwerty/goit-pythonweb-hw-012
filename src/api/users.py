@@ -14,18 +14,41 @@ router = APIRouter(prefix="/users", tags=["users"])
 limiter = Limiter(key_func=get_remote_address)
 
 
-@router.get("/me", response_model=User, description="No more than 10 requests per minute")
+@router.get(
+    "/me", response_model=User, description="No more than 10 requests per minute"
+)
 @limiter.limit("10 per minute")
 async def me(request: Request, user: User = Depends(get_current_user)):
+    """
+    Function for getting current user
+
+    Args:
+        request (Request): Request
+        user (User, optional): User. Defaults to Depends(get_current_user).
+
+    Returns:
+        User
+    """
     return user
 
 
 @router.patch("/avatar", response_model=User)
 async def update_avatar_user(
-        file: UploadFile = File(),
-        user: User = Depends(get_current_admin_user),
-        db: AsyncSession = Depends(get_db),
+    file: UploadFile = File(),
+    user: User = Depends(get_current_admin_user),
+    db: AsyncSession = Depends(get_db),
 ):
+    """
+    Function for updating user avatar
+
+    Args:
+        file (UploadFile, optional): File. Defaults to File().
+        user (User, optional): User. Defaults to Depends(get_current_admin_user).
+        db (AsyncSession, optional): Database session instance. Defaults to Depends(get_db).
+
+    Returns:
+        User
+    """
     avatar_url = UploadFileService(
         settings.CLD_NAME, settings.CLD_API_KEY, settings.CLD_API_SECRET
     ).upload_file(file, user.username)

@@ -13,7 +13,7 @@ app = FastAPI()
 origins = [
     "http://localhost:8000",
     "http://127.0.0.1:5500",  # check CORS via live served on VSCode
-    "http://localhost:63342"  # check CORS via live served on PyCharm
+    "http://localhost:63342",  # check CORS via live served on PyCharm
 ]
 
 app.add_middleware(
@@ -27,6 +27,16 @@ app.add_middleware(
 
 @app.exception_handler(RateLimitExceeded)
 async def rate_limit_handler(request: Request, exc: RateLimitExceeded):
+    """
+    Handle rate limit exceeded.
+
+    Args:
+        request: Request
+        exc: RateLimitExceeded
+
+    Returns:
+        JSONResponse
+    """
     logger.warning(f"Rate limit exceeded for '{request.client.host}' host.")
     return JSONResponse(
         status_code=status.HTTP_429_TOO_MANY_REQUESTS,

@@ -11,7 +11,7 @@ python = "^3.10"
 asyncpg = "^0.30.0"
 sqlalchemy = "^2.0.36"
 alembic = "^1.14.0"
-fastapi = {version = "0.115.5", extras = ["standard"]}
+fastapi = { version = "0.115.5", extras = ["standard"] }
 python-jose = { extras = ["cryptography"], version = "^3.3.0" }
 passlib = { extras = ["bcrypt"], version = "^1.7.4" }
 libgravatar = "^1.0.4"
@@ -36,5 +36,7 @@ build-backend = "poetry.core.masonry.api"
 
 [tool.pytest.ini_options]
 pythonpath = "."
-filterwarnings = "ignore::DeprecationWarning"
+filterwarnings = ["ignore::DeprecationWarning", "ignore::UserWarning"]
 asyncio_default_fixture_loop_scope = "function"
+asyncio_mode = "auto"
+timeout = 10
