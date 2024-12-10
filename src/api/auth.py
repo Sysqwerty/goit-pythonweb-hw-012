@@ -1,3 +1,15 @@
+"""
+This module provides authentication-related endpoints for user registration and login.
+
+Endpoints:
+- POST /api/auth/register: Registers a new user in the system.
+- POST /api/auth/login: Authenticates a user and returns an access token.
+- GET /api/auth/confirmed_email/{token}: Confirms a user's email address.
+- POST /api/auth/request_email/: Requests a user's email confirmation.
+- POST /api/auth/reset_password/: Requests to reset a user's password.
+- GET /api/auth/confirm_reset_password/{token}: Confirms reset a user's password.
+"""
+
 from fastapi import APIRouter, Depends, HTTPException, status, BackgroundTasks, Request
 from sqlalchemy.ext.asyncio import AsyncSession
 from fastapi.security import OAuth2PasswordRequestForm
@@ -25,20 +37,7 @@ async def register_user(
     db: AsyncSession = Depends(get_db),
 ):
     """
-    Function for registration new users
-
-    Args:
-        user_data (UserCreate): User data
-        background_tasks (BackgroundTasks): Background tasks
-        request (Request): Request
-        db (AsyncSession): Database session instance
-
-    Returns:
-        User
-
-    Raises:
-        HTTPException: User already exists
-        HTTPException: Username or email already exists
+    Registers a new user in the system.
     """
     user_service = UserService(db)
 
@@ -70,18 +69,7 @@ async def login_user(
     form_data: OAuth2PasswordRequestForm = Depends(), db: AsyncSession = Depends(get_db)
 ):
     """
-    Function for login users
-
-    Args:
-        form_data (OAuth2PasswordRequestForm): Form data
-        db (AsyncSession): Database session instance
-
-    Returns:
-        dict: Access token
-
-    Raises:
-        HTTPException: Invalid credentials
-        HTTPException: Email not confirmed
+    Authenticates a user and returns an access token.
     """
     user_service = UserService(db)
     user = await user_service.get_user_by_username(form_data.username)
@@ -105,17 +93,7 @@ async def login_user(
 @router.get("/confirmed_email/{token}")
 async def confirmed_email(token: str, db: AsyncSession = Depends(get_db)):
     """
-    Function for user activation
-
-    Args:
-        token (str): Token
-        db (AsyncSession): Database session instance
-
-    Returns:
-        dict: Message about successful activation
-
-    Raises:
-        HTTPException: Verification error
+    Confirms a user's email address.
     """
     email = await get_email_from_token(token)
     user_service = UserService(db)
@@ -138,16 +116,7 @@ async def request_email(
     db: AsyncSession = Depends(get_db),
 ):
     """
-    Function for requesting email confirmation
-
-    Args:
-        body (RequestEmail): Body
-        background_tasks (BackgroundTasks): Background tasks
-        request (Request): Request
-        db (AsyncSession): Database session instance
-
-    Returns:
-        dict: Message about successful request
+    Requests a user's email confirmation.
     """
     user_service = UserService(db)
     user = await user_service.get_user_by_email(body.email)
@@ -169,19 +138,7 @@ async def reset_password_request(
     db: AsyncSession = Depends(get_db),
 ):
     """
-    Function for requesting password reset
-
-    Args:
-        body (ResetPassword): Body
-        background_tasks (BackgroundTasks): Background tasks
-        request (Request): Request
-        db (AsyncSession): Database session instance
-
-    Returns:
-        dict: Message about successful request
-
-    Raises:
-        HTTPException: Email not confirmed
+    Requests to reset a user's password.
     """
     user_service = UserService(db)
     user = await user_service.get_user_by_email(body.email)
@@ -217,18 +174,7 @@ async def reset_password_request(
 @router.get("/confirm_reset_password/{token}")
 async def confirm_reset_password(token: str, db: AsyncSession = Depends(get_db)):
     """
-    Function for password reset
-
-    Args:
-        token (str): Token
-        db (AsyncSession): Database session instance
-
-    Returns:
-        dict: Message about successful reset password
-
-    Raises:
-        HTTPException: Invalid or expired token
-        HTTPException: User with such email not found
+    Confirms reset a user's password.
     """
     email = await get_email_from_token(token)
     hashed_password = await get_password_from_token(token)

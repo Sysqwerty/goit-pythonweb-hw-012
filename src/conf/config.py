@@ -3,30 +3,6 @@ from pydantic_settings import BaseSettings
 
 
 class Settings(BaseSettings):
-    """
-    Settings for the application
-
-    Attributes:
-        DB_URL (str): Database URL
-        JWT_SECRET (str): Secret key for JWT
-        JWT_ALGORITHM (str): Algorithm for JWT
-        JWT_EXPIRATION_SECONDS (int): Expiration time for JWT
-
-        MAIL_USERNAME (EmailStr): Username for email
-        MAIL_PASSWORD (str): Password for email
-        MAIL_FROM (EmailStr): Email from
-        MAIL_PORT (int): Port for email
-        MAIL_SERVER (str): Server for email
-        MAIL_FROM_NAME (str): Name for email
-        MAIL_STARTTLS (bool): StartTLS for email
-        MAIL_SSL_TLS (bool): SSL/TLS for email
-        USE_CREDENTIALS (bool): Use credentials for email
-        VALIDATE_CERTS (bool): Validate certs for email
-
-        CLD_NAME (str): Name for Cloudinary
-        CLD_API_KEY (int): API key for Cloudinary
-        CLD_API_SECRET (str): API secret for Cloudinary
-    """
 
     DB_URL: str = ""
     JWT_SECRET: str = ""

@@ -10,11 +10,7 @@ logger = logging.getLogger("rate_limiter")
 
 app = FastAPI()
 
-origins = [
-    "http://localhost:8000",
-    "http://127.0.0.1:5500",  # check CORS via live served on VSCode
-    "http://localhost:63342",  # check CORS via live served on PyCharm
-]
+origins = ["http://localhost:*", "*"]
 
 app.add_middleware(
     CORSMiddleware,

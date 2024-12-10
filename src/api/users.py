@@ -1,3 +1,11 @@
+"""
+This module provides users-related endpoints for getting current user or update avatar.
+
+Endpoints:
+- GET /api/users/me: Gets current user.
+- PATCH /api/users/avatar: Updates user avatar.
+"""
+
 from fastapi import APIRouter, Depends, Request, UploadFile, File
 from slowapi import Limiter
 from slowapi.util import get_remote_address
@@ -20,14 +28,7 @@ limiter = Limiter(key_func=get_remote_address)
 @limiter.limit("10 per minute")
 async def me(request: Request, user: User = Depends(get_current_user)):
     """
-    Function for getting current user
-
-    Args:
-        request (Request): Request
-        user (User, optional): User. Defaults to Depends(get_current_user).
-
-    Returns:
-        User
+    Gets current user.
     """
     return user
 
@@ -39,15 +40,7 @@ async def update_avatar_user(
     db: AsyncSession = Depends(get_db),
 ):
     """
-    Function for updating user avatar
-
-    Args:
-        file (UploadFile, optional): File. Defaults to File().
-        user (User, optional): User. Defaults to Depends(get_current_admin_user).
-        db (AsyncSession, optional): Database session instance. Defaults to Depends(get_db).
-
-    Returns:
-        User
+    Updates user avatar.
     """
     avatar_url = UploadFileService(
         settings.CLD_NAME, settings.CLD_API_KEY, settings.CLD_API_SECRET

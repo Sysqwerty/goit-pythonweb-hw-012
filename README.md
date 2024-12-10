@@ -1,19 +1,19 @@
 # goit-pythonweb-hw-12
 
+For local running make sure you have:
 
-
-Make sure you have:
 - [Docker Engine](https://docs.docker.com/engine/install/) installed first
-- email account on [META.ua](https://meta.ua/uk/) (for email sending)
+- email account on [META.ua](https://meta.ua/uk/) (or any other mail server for email sending)
 - account on [Cloudinary](https://cloudinary.com/)
 
 In the root directory create `.env` file with next content:
+
 ```
 POSTGRES_DB=<db_name>
 POSTGRES_USER=<db_user_name>
 POSTGRES_PASSWORD=<db_user_password>
 POSTGRES_PORT=5432
-POSTGRES_HOST=localhost
+POSTGRES_HOST=postgress (name of the postgress service container)
 
 MAIL_USERNAME=<your_email>@meta.ua
 MAIL_PASSWORD=<email_password>
@@ -31,33 +31,26 @@ JWT_ALGORITHM=HS256
 JWT_EXPIRATION_SECONDS=3600
 ```
 
-```bash
-poetry shell
-```
+### Run
+
+Execute the command to build and start the application
 
 ```bash
-poetry install
+docker-compose up --build
 ```
 
-```bash
-docker-compose up -d
-```
+Click the [link](http://127.0.0.1:8000/docs) to open API documentation
 
-```bash
-alembic upgrade head
-```
+### Tests
 
-```bash
-fastapi dev main.py
-```
+Run pytests and generate the test coverage report
 
-Open in browser SWAGGER doc: [link](http://127.0.0.1:8000/docs#/)
-
-### TESTS
-Run all the tests and re-generate the test report coverage
 ```bash
 pytest --cov=src tests/ --cov-report=html
 ```
 
 Check tests coverage HTML
 [link](htmlcov/index.html)
+
+Check the doc file HTML
+[link](docs/_build/html/index.html)

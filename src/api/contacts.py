@@ -1,3 +1,15 @@
+"""
+This module provides contacts-related endpoints for contact creation, updating and deletion.
+
+Endpoints:
+- GET /api/contacts/birthdays: Gets upcoming birthdays
+- GET /api/contacts: Gets all contacts
+- POST /api/contacts: Creates a new contact
+- GET /api/contacts/{contact_id}: Gets a contact by id
+- PUT /api/contacts/{contact_id}: Updates a contact by id
+- DELETE /api/contacts/{contact_id}: Deletes a contact by id
+"""
+
 from typing import List
 
 from fastapi import APIRouter, HTTPException, Depends, status, Query
@@ -19,15 +31,7 @@ async def get_upcoming_birthdays(
     user: User = Depends(get_current_user),
 ):
     """
-    Function for getting upcoming birthdays
-
-    Args:
-        days (int, optional): Days. Defaults to 7.
-        db (AsyncSession, optional): Database session instance. Defaults to Depends(get_db).
-        user (User, optional): User. Defaults to Depends(get_current_user).
-
-    Returns:
-        list[ContactResponse]: List of upcoming birthdays
+    Gets upcoming birthdays
     """
     contact_service = ContactService(db)
     return await contact_service.get_upcoming_birthdays(days, user)
@@ -44,19 +48,7 @@ async def get_contacts(
     user: User = Depends(get_current_user),
 ):
     """
-    Function for getting all contacts
-
-    Args:
-        first_name (str, optional): First name. Defaults to "".
-        last_name (str, optional): Last name. Defaults to "".
-        email (str, optional): Email. Defaults to "".
-        skip (int, optional): Skip. Defaults to 0.
-        limit (int, optional): Limit. Defaults to 100.
-        db (AsyncSession, optional): Database session instance. Defaults to Depends(get_db).
-        user (User, optional): User. Defaults to Depends(get_current_user).
-
-    Returns:
-        List[ContactResponse]: List of contacts
+    Gets all contacts
     """
     contact_service = ContactService(db)
     contacts = await contact_service.get_contacts(
@@ -72,18 +64,7 @@ async def get_contact(
     user: User = Depends(get_current_user),
 ):
     """
-    Function for getting contact
-
-    Args:
-        contact_id (int): Contact id
-        db (AsyncSession, optional): Database session instance. Defaults to Depends(get_db).
-        user (User, optional): User. Defaults to Depends(get_current_user).
-
-    Returns:
-        ContactResponse: Contact
-
-    Raises:
-        HTTPException: Contact not found
+    Gets a contact by id
     """
     contact_service = ContactService(db)
     contact = await contact_service.get_contact(contact_id, user)
@@ -102,15 +83,7 @@ async def create_contact(
     user: User = Depends(get_current_user),
 ):
     """
-    Function for creating contact
-
-    Args:
-        body (ContactModel): Contact
-        db (AsyncSession, optional): Database session instance. Defaults to Depends(get_db).
-        user (User, optional): User. Defaults to Depends(get_current_user).
-
-    Returns:
-        ContactResponse: Contact
+    Creates a new contact
     """
     contact_service = ContactService(db)
     return await contact_service.create_contact(body, user)
@@ -124,19 +97,7 @@ async def update_contact(
     user: User = Depends(get_current_user),
 ):
     """
-    Function for updating contact
-
-    Args:
-        body (ContactModel): Contact
-        contact_id (int): Contact id
-        db (AsyncSession, optional): Database session instance. Defaults to Depends(get_db).
-        user (User, optional): User. Defaults to Depends(get_current_user).
-
-    Returns:
-        ContactResponse: Contact
-
-    Raises:
-        HTTPException: Contact not found
+    Updates a contact by id
     """
     contact_service = ContactService(db)
     contact = await contact_service.update_contact(contact_id, body, user)
@@ -154,18 +115,7 @@ async def remove_contact(
     user: User = Depends(get_current_user),
 ):
     """
-    Function for removing contact
-
-    Args:
-        contact_id (int): Contact id
-        db (AsyncSession, optional): Database session instance. Defaults to Depends(get_db).
-        user (User, optional): User. Defaults to Depends(get_current_user).
-
-    Returns:
-        ContactResponse: Contact
-
-    Raises:
-        HTTPException: Contact not found
+    Deletes a contact by id
     """
     contact_service = ContactService(db)
     contact = await contact_service.remove_contact(contact_id, user)
